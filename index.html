@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أخبار من almanadger</title>
+    <style>
+        /* تصميم CSS أساسي لجعل الصفحة احترافية ومنسقة */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5; /* لون خلفية خفيف */
+            color: #333;
+            line-height: 1.6;
+            direction: rtl; /* لضمان الاتجاه من اليمين لليسار */
+            text-align: right; /* محاذاة النص لليمين */
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            position: relative; /* لإمكانية وضع زر التحديث */
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #eee;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+        .refresh-button {
+            position: absolute;
+            top: 20px;
+            left: 20px; /* في RTL، الزر يكون في اليسار */
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background-color 0.3s ease;
+        }
+        .refresh-button:hover {
+            background-color: #0056b3;
+        }
+        .article-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+        }
+        .article-card {
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .article-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .article-card h2 {
+            margin-top: 0;
+            color: #0056b3;
+            font-size: 1.6em;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+        .article-card p {
+            font-size: 1em;
+            color: #555;
+            flex-grow: 1; /* يجعل الملخص يأخذ المساحة المتاحة */
+            margin-bottom: 15px;
+        }
+        .article-card .meta {
+            font-size: 0.85em;
+            color: #777;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+        .article-card .source {
+            font-weight: bold;
+            color: #007bff;
+        }
+        .article-card .date {
+            color: #6c757d;
+        }
+        .article-card a {
+            display: inline-block;
+            margin-top: 15px;
+            color: #28a745;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.2s ease;
+            text-align: left; /* زر "قراءة المزيد" ليكون على اليسار */
+        }
+        .article-card a:hover {
+            color: #218838;
+            text-decoration: underline;
+        }
+        .loading {
+            text-align: center;
+            font-size: 1.2em;
+            color: #6c757d;
+            grid-column: 1 / -1; /* لجعل رسالة التحميل تتوسط كل الأعمدة */
+        }
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #888;
+            font-size: 0.9em;
+        }
+        @media (max-width: 900px) {
+            .article-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+            .container {
+                padding: 15px;
+            }
+            .article-grid {
+                grid-template-columns: 1fr;
+            }
+            .refresh-button {
+                position: static;
+                display: block;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="refresh-button" onclick="location.reload()">تحديث الأخبار</button>
+        <h1>أحدث الأخبار من alamanadger</h1>
+        <div id="articles-container" class="article-grid">
+            <p class="loading">جاري تحميل الأخبار... يرجى الانتظار.</p>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2025 almanadger iliass. جميع الحقوق محفوظة.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const articlesContainer = document.getElementById('articles-container');
+
+            function fetchArticles() {
+                articlesContainer.innerHTML = '<p class="loading">جاري تحميل الأخبار... يرجى الانتظار.</p>'; // عرض رسالة التحميل
+                fetch('articles.json?' + new Date().getTime()) // إضافة timestamp لتجنب التخزين المؤقت (caching)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`فشل تحميل ملف الأخبار: ${response.status} ${response.statusText}. تأكد من أن ملف articles.json موجود ويمكن الوصول إليه.`);
+                        }
+                        return response.json();
+                    })
+                    .then(articles => {
+                        articlesContainer.innerHTML = ''; // مسح رسالة التحميل
+                        if (articles.length === 0) {
+                            articlesContainer.innerHTML = '<p style="text-align: center; color: #6c757d;">لا توجد مقالات لعرضها حاليًا.</p>';
+                            return;
+                        }
+
+                        articles.forEach(article => {
+                            const articleCard = document.createElement('div');
+                            articleCard.classList.add('article-card');
+
+                            // التعامل مع تاريخ النشر (قد يكون بتنسيقات مختلفة)
+                            let publishedDate;
+                            try {
+                                publishedDate = new Date(article.published);
+                                // التحقق مما إذا كان التاريخ صالحًا
+                                if (isNaN(publishedDate.getTime())) {
+                                    throw new Error("Invalid Date");
+                                }
+                            } catch (e) {
+                                publishedDate = null; // تعيينه إلى null إذا كان غير صالح
+                            }
+
+                            const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                            // تنسيق التاريخ ليكون سهل القراءة باللغة العربية
+                            const formattedDate = publishedDate ? publishedDate.toLocaleDateString('ar-EG', options) : 'تاريخ غير متوفر';
+
+                            articleCard.innerHTML = `
+                                <h2><a href="${article.link}" target="_blank" rel="noopener noreferrer">${article.title}</a></h2>
+                                <p>${article.summary}</p>
+                                <div class="meta">
+                                    <span class="source">المصدر: ${article.source}</span>
+                                    <span class="date">${formattedDate}</span>
+                                </div>
+                                <a href="${article.link}" target="_blank" rel="noopener noreferrer">قراءة المزيد &raquo;</a>
+                            `;
+                            articlesContainer.appendChild(articleCard);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('حدث خطأ:', error);
+                        articlesContainer.innerHTML = `<p style="color: red; text-align: center;">عذرًا، حدث خطأ أثناء تحميل الأخبار: ${error.message}<br>يرجى التأكد من تشغيل ملف run_news.bat وأن ملف articles.json موجود.</p>`;
+                    });
+            }
+
+            fetchArticles(); // جلب الأخبار عند تحميل الصفحة لأول مرة
+
+            // يمكنك إضافة تحديث تلقائي هنا إذا أردت، مثلاً كل 5 دقائق
+            // setInterval(fetchArticles, 300000); // 300000 مللي ثانية = 5 دقائق
+        });
+    </script>
+</body>
+</html>
