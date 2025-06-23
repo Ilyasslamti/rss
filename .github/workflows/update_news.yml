@@ -25,15 +25,17 @@ jobs:
     - name: Install dependencies # الخطوة الثالثة: تثبيت المكتبات اللازمة لعمل السكربت
       run: |
         python -m pip install --upgrade pip # تحديث pip
-        pip install feedparser # هذا هو السطر الأساسي الذي يثبت مكتبة feedparser
+        pip install feedparser # هذا هو السطر الأساسي الذي يثبت مكتبة feedparser. تأكد من هذا السطر!
+
+# هذا السطر مهم جداً، تأكد أنه تحت 'Install dependencies' وله مسافات بادئة صحيحة
 
     - name: Run the RSS to JSON script # الخطوة الرابعة: تشغيل سكربت جلب الأخبار وتوليد ملف JSON
       run: python rss_to_json.py
 
     - name: Commit and push changes # الخطوة الخامسة: حفظ التغييرات ودفعها إلى GitHub
       run: |
-        git config user.name 'github-actions[bot]' # إعداد اسم المستخدم لـ Git commit
-        git config user.email 'github-actions[bot]@users.noreply.github.com' # إعداد البريد الإلكتروني لـ Git commit
-        git add articles.json # إضافة ملف articles.json المحدث إلى Git
-        git commit -m 'Update news articles [skip ci]' || echo "No changes to commit" # عمل commit للتغييرات، وتجاهل إذا لم تكن هناك تغييرات
-        git push # دفع التغييرات إلى المستودع على GitHub
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add articles.json
+        git commit -m 'Update news articles [skip ci]' || echo "No changes to commit"
+        git push
