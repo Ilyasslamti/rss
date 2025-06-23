@@ -9,30 +9,32 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # سيتم تشغيل المهمة على أحدث إصدار من نظام تشغيل Ubuntu
+    runs-on: ubuntu-latest
     permissions:
       contents: write # هذا السطر يمنح الصلاحيات اللازمة للمساعد الآلي لكتابة التغييرات إلى المستودع (مثل تحديث articles.json)
 
     steps:
-    - name: Checkout repository # الخطوة الأولى: سحب كود المستودع إلى بيئة GitHub Actions
+    - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Python # الخطوة الثانية: إعداد بيئة Python
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x' # استخدام أحدث إصدار من Python 3
+        python-version: '3.x'
 
-    - name: Install dependencies # الخطوة الثالثة: تثبيت المكتبات اللازمة لعمل السكربت
+    - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip # تحديث pip
-        pip install feedparser # هذا هو السطر الأساسي الذي يثبت مكتبة feedparser. تأكد من هذا السطر!
+        python -m pip install --upgrade pip
+        pip install feedparser
 
-# هذا السطر مهم جداً، تأكد أنه تحت 'Install dependencies' وله مسافات بادئة صحيحة
-
-    - name: Run the RSS to JSON script # الخطوة الرابعة: تشغيل سكربت جلب الأخبار وتوليد ملف JSON
+    - name: Run the RSS to JSON script
       run: python rss_to_json.py
 
-    - name: Commit and push changes # الخطوة الخامسة: حفظ التغييرات ودفعها إلى GitHub
+    - name: Pull latest changes before commit # خطوة جديدة: سحب أحدث التغييرات
+      run: |
+        git pull origin main || echo "No new changes to pull" # يسحب من الفرع main، ويتجاهل الخطأ إذا لم تكن هناك تغييرات لسحبها
+
+    - name: Commit and push changes # الخطوة النهائية: حفظ التغييرات ودفعها
       run: |
         git config user.name 'github-actions[bot]'
         git config user.email 'github-actions[bot]@users.noreply.github.com'
