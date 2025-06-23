@@ -25,7 +25,7 @@ jobs:
     - name: Install dependencies # الخطوة الثالثة: تثبيت المكتبات اللازمة لعمل السكربت
       run: |
         python -m pip install --upgrade pip # تحديث pip
-        pip install feedparser # تثبيت مكتبة feedparser التي يحتاجها سكربت rss_to_json.py
+        pip install feedparser # هذا هو السطر الأساسي الذي يثبت مكتبة feedparser
 
     - name: Run the RSS to JSON script # الخطوة الرابعة: تشغيل سكربت جلب الأخبار وتوليد ملف JSON
       run: python rss_to_json.py
