@@ -24,7 +24,7 @@ jobs:
       - name: 📰 تشغيل سكربت جلب الأخبار
         run: |
           echo "أهلاً بك في نظام أخبار hachimi shop"
-          python update_articles.py
+          python rss_to_json.py
 
       - name: ✅ حفظ التعديلات (إن وُجدت)
         run: |
