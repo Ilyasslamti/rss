@@ -1,39 +1,36 @@
-name: Update News Articles # هذا هو اسم المساعد الآلي الخاص بك، سيظهر لك في تبويبة Actions
+name: Update News Articles
 
 on:
   schedule:
-    # هذه هي الأوامر للمساعد الآلي ليعمل كل ساعة:
-    # '0 * * * *' تعني: في الدقيقة 0 من كل ساعة، كل يوم، كل شهر، كل أيام الأسبوع.
-    - cron: '0 * * * *' 
+    - cron: '0 * * * *'  # كل ساعة
   workflow_dispatch:
-    # هذا الزر سيظهر لك في GitHub لكي تشغل المساعد يدوياً متى أردت، مفيد للاختبار
-
 
 jobs:
-  build: # هذا اسم للمهمة التي سيقوم بها المساعد
-    runs-on: ubuntu-latest # المساعد سيعمل على نظام تشغيل لينكس (مناسب لباثيون)
+  update:
+    runs-on: ubuntu-latest
 
-    steps: # هذه هي الخطوات التي سيتبعها المساعد الآلي بالتسلسل
-    - name: Checkout repository # الخطوة 1: يقوم بتحميل ملفات مشروعك من GitHub
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Set up Python # الخطوة 2: يجهز بيئة بايثون لسكربت جمع الأخبار
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x' # يستخدم أحدث إصدار من بايثون 3
+      - name: Set up Git
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
 
-    - name: Install dependencies # الخطوة 3: يثبت المكتبات التي يحتاجها سكربت الأخبار (مثل feedparser)
-      run: |
-        python -m pip install --upgrade pip
-        pip install feedparser
+      - name: Run your script to update articles
+        run: |
+          # مثال فقط — ضع هنا سكربتك الذي يحدث المقالات
+          python scripts/update_articles.py
 
-    - name: Run the RSS to JSON script # الخطوة 4: يشغل سكربت "جامع الأخبار" الخاص بك
-      run: python rss_to_json.py
+      - name: Commit changes
+        run: |
+          git add .
+          git commit -m "Update news articles [skip ci]" || echo "No changes to commit"
 
-    - name: Commit and push changes # الخطوة 5: يحفظ التغييرات ويدفعها لـ GitHub
-      run: |
-        git config user.name 'github-actions[bot]' # يحدد اسم المساعد الآلي
-        git config user.email 'github-actions[bot]@users.noreply.github.com' # يحدد بريد المساعد
-        git add articles.json # يضيف ملف الأخبار المحدث
-        git commit -m 'Update news articles [skip ci]' || echo "No changes to commit" # يحفظ التغييرات (إذا كان هناك تغيير)
-        git push # يرسل التغييرات الجديدة إلى GitHub
+      - name: Pull latest changes from GitHub (to avoid push conflicts)
+        run: |
+          git pull origin main --rebase || true
+
+      - name: Push changes
+        run: git push origin main
