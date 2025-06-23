@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-          ref: main  # ✅ هذا السطر هو المفتاح لنجاح pull/rebase
+          ref: main
 
       - name: ⚙️ إعداد Git
         run: |
@@ -24,7 +24,7 @@ jobs:
       - name: 📰 تشغيل سكربت جلب الأخبار
         run: |
           echo "أهلاً بك في نظام أخبار hachimi shop"
-          python scripts/update_articles.py
+          python update_articles.py
 
       - name: ✅ حفظ التعديلات (إن وُجدت)
         run: |
