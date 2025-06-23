@@ -2,38 +2,38 @@ name: Update News Articles
 
 on:
   schedule:
-    # Runs every hour
+    # سيتم تشغيل سير العمل هذا كل ساعة
     - cron: '0 * * * *'
   workflow_dispatch:
-    # Allows you to run this workflow manually from the Actions tab
+    # هذا يسمح لك بتشغيل سير العمل يدويًا من علامة تبويب Actions في GitHub
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-    permissions: # هذا الجزء مهم لتحديد الأذونات الخاصة بهذه المهمة
-      contents: write # يمنح صلاحية الكتابة للمستودع
+    runs-on: ubuntu-latest # سيتم تشغيل المهمة على أحدث إصدار من نظام تشغيل Ubuntu
+    permissions:
+      contents: write # هذا السطر يمنح الصلاحيات اللازمة للمساعد الآلي لكتابة التغييرات إلى المستودع (مثل تحديث articles.json)
 
     steps:
-    - name: Checkout repository
+    - name: Checkout repository # الخطوة الأولى: سحب كود المستودع إلى بيئة GitHub Actions
       uses: actions/checkout@v4
 
-    - name: Set up Python
+    - name: Set up Python # الخطوة الثانية: إعداد بيئة Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x'
+        python-version: '3.x' # استخدام أحدث إصدار من Python 3
 
-    - name: Install dependencies
+    - name: Install dependencies # الخطوة الثالثة: تثبيت المكتبات اللازمة لعمل السكربت
       run: |
-        python -m pip install --upgrade pip
-        pip install feedparser
+        python -m pip install --upgrade pip # تحديث pip
+        pip install feedparser # تثبيت مكتبة feedparser التي يحتاجها سكربت rss_to_json.py
 
-    - name: Run the RSS to JSON script
+    - name: Run the RSS to JSON script # الخطوة الرابعة: تشغيل سكربت جلب الأخبار وتوليد ملف JSON
       run: python rss_to_json.py
 
-    - name: Commit and push changes
+    - name: Commit and push changes # الخطوة الخامسة: حفظ التغييرات ودفعها إلى GitHub
       run: |
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-        git add articles.json
-        git commit -m 'Update news articles [skip ci]' || echo "No changes to commit"
-        git push
+        git config user.name 'github-actions[bot]' # إعداد اسم المستخدم لـ Git commit
+        git config user.email 'github-actions[bot]@users.noreply.github.com' # إعداد البريد الإلكتروني لـ Git commit
+        git add articles.json # إضافة ملف articles.json المحدث إلى Git
+        git commit -m 'Update news articles [skip ci]' || echo "No changes to commit" # عمل commit للتغييرات، وتجاهل إذا لم تكن هناك تغييرات
+        git push # دفع التغييرات إلى المستودع على GitHub
