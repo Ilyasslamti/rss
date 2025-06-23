@@ -2,38 +2,38 @@ name: Update News Articles
 
 on:
   schedule:
-    - cron: '0 * * * *'  # كل ساعة
+    # Runs every hour
+    - cron: '0 * * * *'
   workflow_dispatch:
+    # Allows you to run this workflow manually from the Actions tab
 
 jobs:
-  update:
+  build:
     runs-on: ubuntu-latest
+    permissions: # هذا الجزء مهم لتحديد الأذونات الخاصة بهذه المهمة
+      contents: write # يمنح صلاحية الكتابة للمستودع
 
     steps:
-      - name: 🧾 سحب الملفات من GitHub
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          ref: main
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-      - name: ⚙️ إعداد Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions@github.com"
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.x'
 
-      - name: 📰 تشغيل سكربت جلب الأخبار
-        run: |
-          echo "أهلاً بك في نظام أخبار hachimi shop"
-          python rss_to_json.py
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install feedparser
 
-      - name: ✅ حفظ التعديلات (إن وُجدت)
-        run: |
-          git add .
-          git commit -m "Update news articles [skip ci]" || echo "🔸 لا توجد تغييرات"
+    - name: Run the RSS to JSON script
+      run: python rss_to_json.py
 
-      - name: 🔄 سحب التغييرات من GitHub قبل الدفع
-        run: |
-          git pull origin main --rebase || echo "🔸 لا حاجة للسحب أو تعذر السحب"
-
-      - name: 🚀 رفع التحديثات إلى GitHub
-        run: git push origin main
+    - name: Commit and push changes
+      run: |
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git add articles.json
+        git commit -m 'Update news articles [skip ci]' || echo "No changes to commit"
+        git push
