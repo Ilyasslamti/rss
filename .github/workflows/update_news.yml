@@ -13,7 +13,8 @@ jobs:
       - name: 🧾 سحب الملفات من GitHub
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # مهم لسحب كل التاريخ حتى يتمكن من rebase
+          fetch-depth: 0
+          ref: main  # ✅ هذا السطر هو المفتاح لنجاح pull/rebase
 
       - name: ⚙️ إعداد Git
         run: |
