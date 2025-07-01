@@ -3,7 +3,7 @@ import json
 from datetime import datetime, timezone, timedelta
 import time
 import sys
-import re # هذا import ضروري لدالة clean_html
+import re
 
 # **مهم جدًا:** ضبط ترميز الإخراج لضمان عرض الأحرف العربية بشكل صحيح في الطرفية.
 # هذا يعالج مشكلة UnicodeEncodeError.
@@ -12,7 +12,8 @@ sys.stdout.reconfigure(encoding='utf-8')
 # --- إعداداتك ---
 # قائمة بتغذيات RSS التي ترغب في سحب الأخبار منها.
 # يمكنك إضافة أو إزالة الروابط حسب الحاجة.
-RSS_FEEDS = [
+# تم استخدام مجموعة (set) لضمان عدم وجود روابط مكررة.
+RSS_FEEDS_RAW = [
     "https://al3omk.com/feed",
     "https://www.hespress.com/feed",
     "https://assabah.ma/feed",
@@ -39,6 +40,7 @@ RSS_FEEDS = [
     "https://chamaly.ma/home/feed/",
     "https://laracheinfo.com/feed",
     "https://nichan.ma/feed/",
+    # --- 20 جريدة إضافية سابقة ---
     "https://akhbarona.com/feed",
     "https://www.chouf.tv/feed",
     "https://goud.ma/feed",
@@ -59,27 +61,64 @@ RSS_FEEDS = [
     "https://skynewsarabia.com/rss",
     "https://arabic.rt.com/rss/",
     "https://sputnikarabic.com/rss.xml",
-    "https://kifache.com/feed",         
-    "https://www.alyaoum24.com/feed",       
-    "https://www.aljarida24.ma/feed/",      
-    "https://www.lakome2.com/feed",         
-    "https://www.ar.sport.le360.ma/feed",   
-    "https://www.alaraby.co.uk/rss/all",    
-    "https://www.france24.com/ar/rss",      
-    "https://www.dw.com/ar/feed/rss-6362-xml", 
-    "https://www.youm7.com/rss/main",       
-    "https://elwatannews.com/Home/Rss",     
-    "https://www.emaratalyoum.com/rss",     
-    "https://www.alittihad.ae/rss/rss",     
-    "https://www.okaz.com.sa/rss",          
-    "https://www.alarabiya.net/.rss/saudi.xml", 
-    "https://www.elkhabar.com/rss/",        
-    "https://ennaharonline.com/feed/",      
-    "https://www.turess.com/tunisia_rss",   
-    "https://www.babnet.net/rss/rss.php",   
-    "https://aljazeera.net/rss/more.xml",   
-    "https://alarabiya.net/.rss/politics.xml" 
+    # --- 20 جريدة إضافية جديدة (غير مكررة) ---
+    "https://kifache.com/feed",
+    "https://www.alyaoum24.com/feed", # قد يكون مكررًا لكن تم تضمينه للتحقق من أحدث رابط
+    "https://www.aljarida24.ma/feed/", # قد يكون مكررًا لكن تم تضمينه للتحقق من أحدث رابط
+    "https://www.lakome2.com/feed",
+    "https://www.ar.sport.le360.ma/feed",
+    "https://www.alaraby.co.uk/rss/all",
+    "https://www.france24.com/ar/rss",
+    "https://www.dw.com/ar/feed/rss-6362-xml",
+    "https://www.youm7.com/rss/main",
+    "https://elwatannews.com/Home/Rss",
+    "https://www.emaratalyoum.com/rss",
+    "https://www.alittihad.ae/rss/rss",
+    "https://www.okaz.com.sa/rss",
+    "https://www.alarabiya.net/.rss/saudi.xml",
+    "https://www.elkhabar.com/rss/",
+    "https://ennaharonline.com/feed/",
+    "https://www.turess.com/tunisia_rss",
+    "https://www.babnet.net/rss/rss.php",
+    "https://aljazeera.net/rss/more.xml",
+    "https://alarabiya.net/.rss/politics.xml",
+    # --- 20 جريدة إضافية أخرى (تم إضافتها الآن) ---
+    "https://www.leconomiste.com/feed", # قد يكون بالفرنسية بشكل أساسي
+    "https://maroc-diplomatique.net/feed/",
+    "https://www.challenge.ma/feed/", # قد يكون بالفرنسية بشكل أساسي
+    "https://alwadifa.ma/feed",
+    "https://www.menara.ma/feed",
+    "https://www.al3ahd.ma/feed/",
+    "https://www.alwadifa.com/feed",
+    "https://www.sahara-online.net/feed/",
+    "https://aljeeran.net/feed/",
+    "https://www.alittihad.info/feed/",
+    "https://www.anfaspress.com/feed/",
+    "https://www.arrifinu.net/feed/",
+    "https://akhbarpress.ma/feed/",
+    "https://www.alyaoum.com/feed/",
+    "https://alwatan.com/feed/", # جريدة كويتية
+    "https://www.thenationalnews.com/feed/arabic/",
+    "https://arabic.cnn.com/rss",
+    "https://arabic.euronews.com/rss",
+    "https://www.ammonnews.net/rss", # عمون نيوز (الأردن)
+    "https://www.khaleejtimes.com/rss/world", # خليج تايمز (عالمي)
+    "https://www.sada-elbalad.com/rss/", # صدى البلد (مصر)
+    "https://www.youm7.com/rss/economy", # اليوم السابع (اقتصاد)
+    "https://www.almayadeen.net/rss", # الميادين
+    "https://www.skynewsarabia.com/rss/economy", # سكاي نيوز عربية (اقتصاد)
+    "https://www.aljazeera.net/rss/lifestyle", # الجزيرة نت (نمط حياة)
+    "https://www.masrawy.com/rss", # مصراوي (مصر)
+    "https://www.almashhad-alyoum.com/rss.xml", # المشهد اليوم
+    "https://www.alyaum.com/feed/", # اليوم (السعودية)
+    "https://www.al-arab.com/feed/", # العرب (لندن)
+    "https://arabic.euronews.com/rss/tag/morocco", # يورونيوز (أخبار المغرب)
+
 ]
+
+# تحويل القائمة إلى مجموعة لإزالة أي روابط مكررة بشكل فعال، ثم تحويلها مرة أخرى إلى قائمة
+RSS_FEEDS = list(set(RSS_FEEDS_RAW))
+
 
 # اسم متجرك (يتم سحبه من معلوماتك المحفوظة).
 STORE_NAME = "hachimi shop"
@@ -133,8 +172,6 @@ def get_published_datetime(entry):
 
 def clean_html(raw_html):
     """يزيل وسوم HTML الأساسية من النصوص."""
-    # يمكن استخدام مكتبات مثل BeautifulSoup لتنظيف أكثر شمولاً،
-    # لكن هذا يكفي لمعظم الحالات البسيطة.
     cleanr = re.compile('<.*?>|&nbsp;')
     cleantext = re.sub(cleanr, '', raw_html)
     return cleantext.strip()
