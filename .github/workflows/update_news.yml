@@ -13,8 +13,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        # هذه السطور مهمة للسماح لـ Git بسحب التغييرات
-        fetch-depth: 0 # لجلب سجل كامل، ضروري لـ pull بشكل صحيح
+        fetch-depth: 0 # هذا ضروري لجلب السجل بالكامل لعملية pull
         token: ${{ secrets.GITHUB_TOKEN }} # استخدام توكن الافتراضي للوصول
 
     - name: Set up Python
@@ -32,9 +31,11 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Pull latest changes
+    - name: Pull latest changes and rebase (Recommended for GitHub Actions)
       run: |
-        git pull origin main # اسحب أحدث التغييرات قبل أي تعديل
+        git pull --rebase origin main
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Run script to fetch and save news
       run: |
@@ -42,9 +43,8 @@ jobs:
 
     - name: Commit and push changes
       run: |
-        git add articles.json # أضف ملف JSON الذي تم تحديثه
-        git commit -m "Update news articles [skip ci]" || echo "No changes to commit" # التزام بالتغييرات، تجاهل إذا لم يكن هناك جديد
-        git push origin main # ادفع التغييرات إلى الفرع الرئيسي
+        git add articles.json
+        # نستخدم هذا الشرط لنتجنب الفشل إذا لم تكن هناك تغييرات حقيقية في الملف
+        git diff --quiet --exit-code -- articles.json || (git commit -m "Update news articles [skip ci]" && git push origin main)
       env:
-        # استخدام توكن الأمان الافتراضي لـ GitHub Actions
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
