@@ -1,21 +1,21 @@
-name: Update News Articles
+name: Update News RSS Feeds
 
 on:
   schedule:
-    # سيتم تشغيل سير العمل هذا كل ساعة
-    - cron: '0 * * * *'
-  workflow_dispatch:
-    # هذا يسمح لك بتشغيل سير العمل يدويًا من علامة تبويب Actions في GitHub
+    - cron: '0 * * * *' # تشغيل كل ساعة (يمكن تعديل هذا الجدول)
+  workflow_dispatch: # يسمح بتشغيل يدوي من واجهة GitHub
 
 jobs:
-  build:
+  update-feeds:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write # هذا السطر يمنح الصلاحيات اللازمة للمساعد الآلي لكتابة التغييرات إلى المستودع (مثل تحديث articles.json)
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        # هذه السطور مهمة للسماح لـ Git بسحب التغييرات
+        fetch-depth: 0 # لجلب سجل كامل، ضروري لـ pull بشكل صحيح
+        token: ${{ secrets.GITHUB_TOKEN }} # استخدام توكن الافتراضي للوصول
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -27,17 +27,24 @@ jobs:
         python -m pip install --upgrade pip
         pip install feedparser
 
-    - name: Run the RSS to JSON script
-      run: python rss_to_json.py
-
-    - name: Pull latest changes before commit # خطوة جديدة: سحب أحدث التغييرات
+    - name: Configure Git
       run: |
-        git pull origin main || echo "No new changes to pull" # يسحب من الفرع main، ويتجاهل الخطأ إذا لم تكن هناك تغييرات لسحبها
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Commit and push changes # الخطوة النهائية: حفظ التغييرات ودفعها
+    - name: Pull latest changes
       run: |
-        git config user.name 'github-actions[bot]'
-        git config user.email 'github-actions[bot]@users.noreply.github.com'
-        git add articles.json
-        git commit -m 'Update news articles [skip ci]' || echo "No changes to commit"
-        git push
+        git pull origin main # اسحب أحدث التغييرات قبل أي تعديل
+
+    - name: Run script to fetch and save news
+      run: |
+        python your_script_name.py # تأكد من استبدال 'your_script_name.py' بالاسم الفعلي لملف البايثون الخاص بك
+
+    - name: Commit and push changes
+      run: |
+        git add articles.json # أضف ملف JSON الذي تم تحديثه
+        git commit -m "Update news articles [skip ci]" || echo "No changes to commit" # التزام بالتغييرات، تجاهل إذا لم يكن هناك جديد
+        git push origin main # ادفع التغييرات إلى الفرع الرئيسي
+      env:
+        # استخدام توكن الأمان الافتراضي لـ GitHub Actions
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
