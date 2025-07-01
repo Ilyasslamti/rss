@@ -31,20 +31,43 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Pull latest changes and rebase (Recommended for GitHub Actions)
-      run: |
-        git pull --rebase origin main
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+    # خطوة تشغيل السكربت لجلب الأخبار وتحديث ملف JSON
     - name: Run script to fetch and save news
       run: |
         python your_script_name.py # تأكد من استبدال 'your_script_name.py' بالاسم الفعلي لملف البايثون الخاص بك
 
-    - name: Commit and push changes
-      run: |
-        git add articles.json
-        # نستخدم هذا الشرط لنتجنب الفشل إذا لم تكن هناك تغييرات حقيقية في الملف
-        git diff --quiet --exit-code -- articles.json || (git commit -m "Update news articles [skip ci]" && git push origin main)
+    - name: Commit and push changes with retry
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # أضف ملف JSON الذي تم تحديثه
+        git add articles.json
+
+        # التحقق مما إذا كانت هناك تغييرات حقيقية قبل محاولة الالتزام والدفع
+        if git diff --staged --quiet --exit-code; then
+          echo "No changes to commit. Skipping commit and push."
+        else
+          MAX_RETRIES=5 # أقصى عدد للمحاولات
+          RETRY_COUNT=0
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "Attempt $((RETRY_COUNT + 1)) to commit and push..."
+            # حاول الالتزام. إذا فشل لأي سبب غير التعارض، سيتم التقاطه هنا.
+            git commit -m "Update news articles [skip ci]"
+
+            # حاول الدفع
+            if git push origin main; then
+              echo "Push successful!"
+              break # الخروج من الحلقة إذا نجح الدفع
+            else
+              echo "Push failed. Pulling latest changes and retrying..."
+              git pull --rebase origin main # اسحب أحدث التغييرات وأعد تطبيق التزامك فوقها
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              sleep 5 # انتظر قليلاً قبل المحاولة التالية لتجنب سباق شرطي فوري
+            fi
+          done
+
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "Failed to commit and push after $MAX_RETRIES attempts."
+            exit 1 # فشل سير العمل إذا لم ينجح بعد عدة محاولات
+          fi
+        fi
