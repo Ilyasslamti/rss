@@ -13,7 +13,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0 # هذا ضروري لجلب السجل بالكامل لعملية pull
+        fetch-depth: 0 # هذا ضروري لجلب السجل بالكامل لعملية pull/rebase
         token: ${{ secrets.GITHUB_TOKEN }} # استخدام توكن الافتراضي للوصول
 
     - name: Set up Python
@@ -31,38 +31,46 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    # خطوة تشغيل السكربت لجلب الأخبار وتحديث ملف JSON
-    - name: Run script to fetch and save news
+    # الخطوة الأولى: تشغيل السكربت لجلب الأخبار وتحديث ملف JSON المحلي
+    # هذا يضمن أن 'articles.json' المحلي هو النسخة التي نريد دفعها
+    - name: Run the RSS to JSON script
       run: |
-        python your_script_name.py # تأكد من استبدال 'your_script_name.py' بالاسم الفعلي لملف البايثون الخاص بك
+        python rss_to_json.py # تأكد من أن هذا هو الاسم الصحيح لملف البايثون الخاص بك
 
+    # الخطوة الثانية: الالتزام والدفع مع استراتيجية إعادة المحاولة
+    # هنا نتعامل مع أي تحديثات تحدث في المستودع البعيد بعد تشغيل السكربت الخاص بنا
     - name: Commit and push changes with retry
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # أضف ملف JSON الذي تم تحديثه
+        # أضف الملف الذي تم تحديثه إلى منطقة التجهيز
         git add articles.json
 
-        # التحقق مما إذا كانت هناك تغييرات حقيقية قبل محاولة الالتزام والدفع
+        # التحقق مما إذا كانت هناك تغييرات حقيقية لالتزامها
+        # 'git diff --staged --quiet --exit-code' سيعود برمز خروج 0 إذا لم تكن هناك تغييرات
         if git diff --staged --quiet --exit-code; then
-          echo "No changes to commit. Skipping commit and push."
+          echo "No changes in articles.json to commit. Skipping commit and push."
         else
-          MAX_RETRIES=5 # أقصى عدد للمحاولات
+          MAX_RETRIES=5
           RETRY_COUNT=0
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
             echo "Attempt $((RETRY_COUNT + 1)) to commit and push..."
-            # حاول الالتزام. إذا فشل لأي سبب غير التعارض، سيتم التقاطه هنا.
+
+            # محاولة الالتزام بالتغييرات المحلية
+            # إذا فشل الالتزام (نادراً ما يحدث هنا إلا في مشاكل غير متوقعة)
             git commit -m "Update news articles [skip ci]"
 
-            # حاول الدفع
+            # محاولة الدفع. إذا نجحت، اخرج.
             if git push origin main; then
               echo "Push successful!"
-              break # الخروج من الحلقة إذا نجح الدفع
+              break
             else
               echo "Push failed. Pulling latest changes and retrying..."
-              git pull --rebase origin main # اسحب أحدث التغييرات وأعد تطبيق التزامك فوقها
+              # اسحب أحدث التغييرات من الفرع الرئيسي عن بُعد وأعد تطبيق التزاماتك فوقها
+              # هذا يحل مشكلة non-fast-forward
+              git pull --rebase origin main
               RETRY_COUNT=$((RETRY_COUNT + 1))
-              sleep 5 # انتظر قليلاً قبل المحاولة التالية لتجنب سباق شرطي فوري
+              sleep 5 # انتظر قليلاً قبل المحاولة التالية
             fi
           done
 
